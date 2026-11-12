@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>كوستر الجامعة</title>
+    
+    <!-- Manifest & Config -->
+    <link rel="manifest" href="manifest.json">
+    <script src="config.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; }
+        .brand-bg { background-color: #0f6b45; }
+        .brand-text { color: #0f6b45; }
+        .brand-border { border-color: #0f6b45; }
+        
+        /* إخفاء الصفحات غير النشطة */
+        .page { display: none; }
+        .page.active { display: block; }
+        
+        /* تخصيص الخريطة */
+        #map { height: calc(100vh - 140px); width: 100%; z-index: 1; }
+        
+        /* تأثير شريط التنقل السفلي */
+        .nav-item.active { color: #0f6b45; font-weight: 700; }
+        .nav-item.active .nav-icon { background-color: #dcfce7; }
+        
+        /* إخفاء شريط التمرير الأفقي */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-gray-50">
+
+    <!-- ================= HEADER ================= -->
+    <header class="brand-bg text-white p-4 flex items-center justify-between shadow-md z-10">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <i data-lucide="bus" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold leading-tight">كوستر الجامعة</h1>
+                <p class="text-xs text-green-100">النقل الذكي للحرم الجامعي</p>
+            </div>
+        </div>
+        <button onclick="navigateTo('notifications')" class="relative p-2 bg-white/10 rounded-full hover:bg-white/20 transition">
+            <i data-lucide="bell" class="w-5 h-5"></i>
+            <span id="notifBadge" class="absolute top-0 left-0 w-3 h-3 bg-red-500 rounded-full border-2 border-[#0f6b45] hidden"></span>
+        </button>
+    </header>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="flex-1 overflow-y-auto relative">
+        
+        <!-- PAGE 1: MAP (الرئيسية) -->
+        <div id="page-map" class="page active">
+            <div id="map"></div>
+            
+            <!-- بطاقة معلومات الكوستر (Bottom Sheet) -->
+            <div class="absolute bottom-20 left-4 right-4 bg-white rounded-2xl shadow-xl p-4 z-20 border border-gray-100">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i data-lucide="bus" class="w-5 h-5 brand-text"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-800">الكوستر #42</h3>
+                            <p class="text-xs text-gray-500">الكلية → المدينة الجامعية</p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">قادم</span>
+                </div>
+                <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div class="flex items-center gap-2 text-gray-600">
+                        <i data-lucide="clock" class="w-4 h-4"></i>
+                        <span class="text-sm">يصل خلال <strong class="brand-text">5 دقائق</strong></span>
+                    </div>
+                    <button class="px-4 py-2 brand-bg text-white text-sm font-bold rounded-xl shadow-md hover:opacity-90 transition">
+                        تتبع مباشر
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 2: ROUTES (المسارات) -->
+        <div id="page-routes" class="page p-4">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">المسارات والجداول</h2>
+            <div class="space-y-3" id="routesList">
+                <!-- سيتم تعبئتها ديناميكياً من app.js -->
+            </div>
+        </div>
+
+        <!-- PAGE 3: NOTIFICATIONS (الإشعارات) -->
+        <div id="page-notifications" class="page p-4">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">الإشعارات</h2>
+            <div class="space-y-3" id="notificationsList">
+                <!-- سيتم تعبئتها ديناميكياً من app.js -->
+            </div>
+        </div>
+
+        <!-- PAGE 4: PROFILE (حسابي) -->
+        <div id="page-profile" class="page p-4">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center mb-6">
+                <div class="w-20 h-20 brand-bg rounded-full flex items-center justify-center mx-auto mb-3 text-white text-3xl font-bold">
+                    ط
+                </div>
+                <h3 class="text-lg font-bold text-gray-800">طالب جامعي</h3>
+                <p class="text-sm text-gray-500">student@university.edu</p>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <button class="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition border-b border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="settings" class="w-5 h-5 text-gray-500"></i>
+                        <span class="font-medium text-gray-700">الإعدادات</span>
+                    </div>
+                    <i data-lucide="chevron-left" class="w-5 h-5 text-gray-400"></i>
+                </button>
+                <button class="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition border-b border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="help-circle" class="w-5 h-5 text-gray-500"></i>
+                        <span class="font-medium text-gray-700">المساعدة والدعم</span>
+                    </div>
+                    <i data-lucide="chevron-left" class="w-5 h-5 text-gray-400"></i>
+                </button>
+                <button onclick="logout()" class="w-full p-4 flex items-center justify-between hover:bg-red-50 transition text-red-600">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
+                        <span class="font-bold">تسجيل الخروج</span>
+                    </div>
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ================= BOTTOM NAVIGATION ================= -->
+    <nav class="bg-white border-t border-gray-200 flex justify-around items-center py-2 px-2 z-30 shadow-lg">
+        <button onclick="navigateTo('map')" class="nav-item active flex flex-col items-center gap-1 p-2 rounded-xl transition" data-page="map">
+            <div class="nav-icon w-10 h-10 rounded-xl flex items-center justify-center transition">
+                <i data-lucide="map" class="w-5 h-5"></i>
+            </div>
+            <span class="text-xs">الرئيسية</span>
+        </button>
+        <button onclick="navigateTo('routes')" class="nav-item flex flex-col items-center gap-1 p-2 rounded-xl transition text-gray-500" data-page="routes">
+            <div class="nav-icon w-10 h-10 rounded-xl flex items-center justify-center transition">
+                <i data-lucide="route" class="w-5 h-5"></i>
+            </div>
+            <span class="text-xs">المسارات</span>
+        </button>
+        <button onclick="navigateTo('notifications')" class="nav-item flex flex-col items-center gap-1 p-2 rounded-xl transition text-gray-500" data-page="notifications">
+            <div class="nav-icon w-10 h-10 rounded-xl flex items-center justify-center transition relative">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+            </div>
+            <span class="text-xs">الإشعارات</span>
+        </button>
+        <button onclick="navigateTo('profile')" class="nav-item flex flex-col items-center gap-1 p-2 rounded-xl transition text-gray-500" data-page="profile">
+            <div class="nav-icon w-10 h-10 rounded-xl flex items-center justify-center transition">
+                <i data-lucide="user" class="w-5 h-5"></i>
+            </div>
+            <span class="text-xs">حسابي</span>
+        </button>
+    </nav>
+
+    <!-- App Logic -->
+    <script src="app.js"></script>
+    <script>
+        // تهيئة الأيقونات
+        lucide.createIcons();
+    </script>
+</body>
+</html>
